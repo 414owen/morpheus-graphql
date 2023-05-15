@@ -33,7 +33,7 @@ module Subscription.Utils
   )
 where
 
-import Data.Aeson (encode)
+import Data.Aeson (encode, fromJSON, genericLiftToJSON)
 import Data.Aeson.Decoding (decode, eitherDecode)
 import Data.Aeson.Types
   ( FromJSON (..),
@@ -232,12 +232,26 @@ storeSubscriptions
               <> show
                 cStore
 
-data RequestPayload = RequestPayload
+data PayloadQuery = PayloadQuery
   { variables :: Maybe Value,
     operationName :: String,
     query :: String
   }
   deriving (Generic, ToJSON)
+
+newtype PayloadData = PayloadData {payloadData :: Value}
+  deriving (Generic)
+
+payloadOptions :: Options
+payloadOptions =
+  ( defaultOptions
+      { fieldLabelModifier = map toLower . drop (length ("Payload" :: String)),
+        omitNothingFields = True
+      }
+  )
+
+instance ToJSON PayloadData where
+  toJSON = genericToJSON payloadOptions
 
 subscribe :: String -> Int -> Signal
 subscribe query sid =
@@ -247,7 +261,7 @@ subscribe query sid =
       signalPayload =
         Just
           ( toJSON
-              RequestPayload
+              PayloadQuery
                 { variables = Nothing,
                   operationName = "MySubscription",
                   query
@@ -263,7 +277,7 @@ apolloRes sid value =
   Signal
     { signalId = Just (show sid),
       signalType = "next",
-      signalPayload = decode ("{\"data\":" <> value <> "}")
+      signalPayload = toJSON . PayloadData <$> decode value
     }
 
 apolloInit :: Signal
