@@ -25,9 +25,14 @@ module Subscription.Utils
     apolloPing,
     apolloPong,
     testSimulation,
+    Signal (..),
+    signal,
+    expectResponseError,
   )
 where
 
+import Data.Aeson (encode)
+import Data.Aeson.Decoding (decode)
 import Data.Aeson.Types
   ( FromJSON (..),
     Options (..),
@@ -40,6 +45,7 @@ import Data.Aeson.Types
 import Data.ByteString.Lazy.Char8
   ( ByteString,
   )
+import Data.Char (toLower)
 import Data.List (lookup)
 import Data.Morpheus
   ( App,
@@ -75,7 +81,7 @@ import Test.Tasty.HUnit
   )
 
 data SimulationState e = SimulationState
-  { inputs :: [ByteString],
+  { inputs :: [Signal],
     outputs :: [ByteString],
     store :: ClientConnectionStore e (SubM e)
   }
@@ -91,7 +97,7 @@ mockUpdateStore :: (Store e -> Store e) -> SimulationState e -> ((), SimulationS
 mockUpdateStore up (SimulationState i o st) = ((), SimulationState i o (up st))
 
 readInput :: SimulationState e -> (ByteString, SimulationState e)
-readInput (SimulationState (i : ins) o s) = (i, SimulationState ins o s)
+readInput (SimulationState (i : ins) o s) = (encode i, SimulationState ins o s)
 readInput (SimulationState [] o s) = ("<Error>", SimulationState [] o s)
 
 wsApp ::
@@ -127,7 +133,7 @@ simulate api input s = runStateT (wsApp api input) s >>= simulate api input . sn
 testSimulation ::
   (Eq ch, Hashable ch) =>
   (Input SUB -> SimulationState (Event ch con) -> TestTree) ->
-  [ByteString] ->
+  [Signal] ->
   App (Event ch con) (SubM (Event ch con)) ->
   IO TestTree
 testSimulation test simInputs api = do
@@ -141,14 +147,17 @@ expectedResponse expected value
   | otherwise =
       assertFailure $ "expected: \n " <> show expected <> " \n but got: \n " <> show value
 
-testResponse :: [ByteString] -> [ByteString] -> TestTree
+expectResponseError :: ByteString -> [ByteString] -> TestTree
+expectResponseError err = testCase "expected response" . expectedResponse [err]
+
+testResponse :: [Signal] -> [ByteString] -> TestTree
 testResponse expected =
   testCase
     "expected response"
     . expectedResponse
-      expected
+      (map encode expected)
 
-inputsAreConsumed :: [ByteString] -> TestTree
+inputsAreConsumed :: [Signal] -> TestTree
 inputsAreConsumed =
   testCase "inputs are consumed"
     . assertEqual
@@ -222,39 +231,56 @@ storeSubscriptions
               <> show
                 cStore
 
-apolloStart :: ByteString -> ByteString -> ByteString
+apolloStart :: ByteString -> String -> Signal
 apolloStart query sid =
-  "{\"id\":\"" <> sid <> "\",\"type\":\"subscribe\",\"payload\":{\"variables\":{},\"operationName\":\"MySubscription\",\"query\":\"" <> query <> "\"}}"
+  Signal
+    { signalId = Just sid,
+      signalType = "subscribe",
+      signalPayload = decode ("{\"variables\":{},\"operationName\":\"MySubscription\",\"query\":\"" <> query <> "\"}")
+    }
 
-apolloStop :: ByteString -> ByteString
-apolloStop x = "{\"id\":\"" <> x <> "\",\"type\":\"complete\"}"
+apolloStop :: String -> Signal
+apolloStop x = signal {signalType = "complete", signalId = Just x}
 
-apolloRes :: ByteString -> ByteString -> ByteString
-apolloRes sid value = "{\"id\":\"" <> sid <> "\",\"type\":\"next\",\"payload\":{\"data\":" <> value <> "}}"
+apolloRes :: String -> ByteString -> Signal
+apolloRes sid value =
+  Signal
+    { signalId = Just sid,
+      signalType = "next",
+      signalPayload = decode ("{\"data\":" <> value <> "}")
+    }
 
-apolloInit :: ByteString
-apolloInit = "{\"type\":\"connection_init\"}"
+apolloInit :: Signal
+apolloInit = signal {signalType = "connection_init"}
 
-apolloConnectionAck :: ByteString
-apolloConnectionAck = "{\"type\":\"connection_ack\"}"
+apolloConnectionAck :: Signal
+apolloConnectionAck = signal {signalType = "connection_ack"}
 
-apolloConnectionErr :: ByteString
-apolloConnectionErr = "{\"type\":\"connection_error\"}"
+apolloConnectionErr :: Signal
+apolloConnectionErr = signal {signalType = "connection_error"}
 
-apolloPing :: ByteString
-apolloPing = "{\"type\":\"ping\"}"
+apolloPing :: Signal
+apolloPing = signal {signalType = "ping"}
 
 apolloPong :: Signal
-apolloPong = Signal {signalType = "ping", signalPayload = Nothing}
+apolloPong = signal {signalType = "pong"}
+
+signal :: Signal
+signal = Signal {signalType = "", signalPayload = Nothing, signalId = Nothing}
 
 data Signal = Signal
   { signalType :: String,
-    signalPayload :: Maybe Value
+    signalPayload :: Maybe Value,
+    signalId :: Maybe String
   }
-  deriving (Generic)
+  deriving (Generic, Ord, Eq, Show)
 
 options :: Options
-options = defaultOptions {fieldLabelModifier = drop 6}
+options =
+  defaultOptions
+    { fieldLabelModifier = map toLower . drop 6,
+      omitNothingFields = True
+    }
 
 instance FromJSON Signal where
   parseJSON = genericParseJSON options

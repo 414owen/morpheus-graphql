@@ -8,9 +8,6 @@ module Subscription.Case.Publishing
   )
 where
 
-import Data.ByteString.Lazy.Char8
-  ( ByteString,
-  )
 import Data.Morpheus.Subscriptions
   ( Event (..),
   )
@@ -27,7 +24,8 @@ import Subscription.API
     app,
   )
 import Subscription.Utils
-  ( SimulationState (..),
+  ( Signal,
+    SimulationState (..),
     apolloConnectionAck,
     apolloInit,
     apolloRes,
@@ -45,10 +43,10 @@ import Test.Tasty
   )
 import Prelude
 
-startNewDeity :: ByteString -> ByteString
+startNewDeity :: String -> Signal
 startNewDeity = apolloStart "subscription MySubscription { newDeity { name , age }}"
 
-startNewHuman :: ByteString -> ByteString
+startNewHuman :: String -> Signal
 startNewHuman = apolloStart "subscription MySubscription { newHuman { name , age }}"
 
 simulateSubscriptions :: IO (Input SUB, SimulationState EVENT)

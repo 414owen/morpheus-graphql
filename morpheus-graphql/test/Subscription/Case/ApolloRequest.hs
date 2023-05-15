@@ -9,15 +9,14 @@ module Subscription.Case.ApolloRequest
   )
 where
 
-import Data.Aeson (encode)
-import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.Morpheus (App)
 import Data.Morpheus.Subscriptions
   ( Event,
   )
 import Relude hiding (ByteString)
 import Subscription.Utils
-  ( SimulationState (..),
+  ( Signal (..),
+    SimulationState (..),
     SubM,
     apolloConnectionAck,
     apolloInit,
@@ -25,7 +24,9 @@ import Subscription.Utils
     apolloPong,
     apolloStart,
     apolloStop,
+    expectResponseError,
     inputsAreConsumed,
+    signal,
     storeIsEmpty,
     storeSubscriptions,
     stored,
@@ -47,15 +48,13 @@ testUnknownType ::
 testUnknownType =
   testSimulation
     test
-    ["{ \"type\":\"bla\" }"]
+    [signal {signalType = "bla"}]
   where
     test _ SimulationState {inputs, outputs, store} =
       testGroup
         "unknown request type"
         [ inputsAreConsumed inputs,
-          testResponse
-            ["Error in $.type: Invalid type encountered."]
-            outputs,
+          expectResponseError "Error in $.type: Invalid type encountered." outputs,
           storeIsEmpty store
         ]
 
@@ -82,16 +81,16 @@ testPingPong ::
   IO TestTree
 testPingPong = testSimulation test [apolloInit, apolloPing]
   where
-    test input SimulationState {inputs, outputs, store} =
+    test _ SimulationState {inputs, outputs} =
       testGroup
         "ping pong"
         [ inputsAreConsumed inputs,
           testResponse
-            [apolloConnectionAck, encode apolloPong]
+            [apolloConnectionAck, apolloPong]
             outputs
         ]
 
-startSub :: ByteString -> ByteString
+startSub :: String -> Signal
 startSub = apolloStart "subscription MySubscription { newDeity { name }}"
 
 testSubscriptionStart ::
