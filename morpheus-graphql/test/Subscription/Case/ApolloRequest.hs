@@ -9,6 +9,7 @@ module Subscription.Case.ApolloRequest
   )
 where
 
+import Data.Aeson (encode)
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.Morpheus (App)
 import Data.Morpheus.Subscriptions
@@ -87,7 +88,7 @@ testPingPong = testSimulation test [apolloInit, apolloPing]
         "ping pong"
         [ inputsAreConsumed inputs,
           testResponse
-            [apolloConnectionAck, apolloPong]
+            [apolloConnectionAck, encode apolloPong]
             outputs
         ]
 

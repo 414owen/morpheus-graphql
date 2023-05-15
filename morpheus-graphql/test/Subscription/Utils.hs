@@ -27,6 +27,15 @@ module Subscription.Utils
   )
 where
 
+import Data.Aeson.Types
+  ( FromJSON (..),
+    Options (..),
+    ToJSON (toJSON),
+    Value,
+    defaultOptions,
+    genericParseJSON,
+    genericToJSON,
+  )
 import Data.ByteString.Lazy.Char8
   ( ByteString,
   )
@@ -63,6 +72,7 @@ import Test.Tasty.HUnit
     assertFailure,
     testCase,
   )
+import Text.ParserCombinators.ReadP (option)
 
 data SimulationState e = SimulationState
   { inputs :: [ByteString],
@@ -234,5 +244,20 @@ apolloConnectionErr = "{\"type\":\"connection_error\"}"
 apolloPing :: ByteString
 apolloPing = "{\"type\":\"ping\"}"
 
-apolloPong :: ByteString
-apolloPong = "{\"type\":\"pong\"}"
+apolloPong :: Signal
+apolloPong = Signal {signalType = "ping", signalPayload = Nothing}
+
+data Signal = Signal
+  { signalType :: String,
+    signalPayload :: Maybe Value
+  }
+  deriving (Generic)
+
+options :: Options
+options = defaultOptions {fieldLabelModifier = drop 6}
+
+instance FromJSON Signal where
+  parseJSON = genericParseJSON options
+
+instance ToJSON Signal where
+  toJSON = genericToJSON options
