@@ -14,8 +14,6 @@ import Data.Morpheus.Subscriptions
 import Data.Morpheus.Subscriptions.Internal
   ( Input,
     SUB,
-    connect,
-    empty,
   )
 import Subscription.API
   ( Channel (..),
@@ -30,9 +28,10 @@ import Subscription.Utils
     apolloInit,
     apolloRes,
     apolloStop,
+    initState,
     inputsAreConsumed,
-    simulate,
     simulatePublish,
+    simulateSubApp,
     storeSubscriptions,
     subscribe,
     testResponse,
@@ -50,24 +49,16 @@ newHuman :: Int -> Signal
 newHuman = subscribe "subscription MySubscription { newHuman { name , age }}"
 
 simulateSubscriptions :: IO (Input SUB, SimulationState EVENT)
-simulateSubscriptions = do
-  input <- connect
-  state <- simulate app input initial
-  pure (input, state)
-  where
-    initial =
-      SimulationState
-        { inputs =
-            [ apolloInit,
-              newDeity 1,
-              newDeity 2,
-              newDeity 3,
-              newHuman 4,
-              apolloStop 1
-            ],
-          outputs = [],
-          store = empty
-        }
+simulateSubscriptions =
+  simulateSubApp app $
+    initState
+      [ apolloInit,
+        newDeity 1,
+        newDeity 2,
+        newDeity 3,
+        newHuman 4,
+        apolloStop 1
+      ]
 
 triggerSubscription ::
   IO TestTree

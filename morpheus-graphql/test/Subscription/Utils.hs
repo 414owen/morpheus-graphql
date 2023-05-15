@@ -8,7 +8,6 @@
 
 module Subscription.Utils
   ( SimulationState (..),
-    simulate,
     expectedResponse,
     SubM,
     testResponse,
@@ -30,6 +29,8 @@ module Subscription.Utils
     Signal (..),
     signal,
     expectResponseError,
+    initState,
+    simulateSubApp,
   )
 where
 
@@ -81,6 +82,19 @@ import Test.Tasty.HUnit
     assertFailure,
     testCase,
   )
+
+type APP ch con = App (Event ch con) (SubM (Event ch con))
+
+type SimState ch con = SimulationState (Event ch con)
+
+simulateSubApp :: (Hashable ch) => APP ch con -> SimState ch con -> IO (Input SUB, SimState ch con)
+simulateSubApp app initial = do
+  input <- connect
+  s <- simulate app input initial
+  pure (input, s)
+
+initState :: [Signal] -> SimulationState (Event c v)
+initState inputs = SimulationState {inputs, outputs = empty, store = empty}
 
 data SimulationState e = SimulationState
   { inputs :: [Signal],
