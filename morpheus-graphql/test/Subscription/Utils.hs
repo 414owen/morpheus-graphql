@@ -31,6 +31,7 @@ module Subscription.Utils
     expectResponseError,
     initState,
     simulateSubApp,
+    addInputs,
   )
 where
 
@@ -93,8 +94,11 @@ simulateSubApp app initial = do
   s <- simulate app input initial
   pure (input, s)
 
-initState :: [Signal] -> SimulationState (Event c v)
-initState inputs = SimulationState {inputs, outputs = empty, store = empty}
+initState :: SimulationState (Event c v)
+initState = SimulationState {inputs = empty, outputs = empty, store = empty}
+
+addInputs :: [Signal] -> SimulationState (Event c v) -> SimulationState (Event c v)
+addInputs inputs' s = s {inputs = inputs' <> inputs s}
 
 data SimulationState e = SimulationState
   { inputs :: [Signal],

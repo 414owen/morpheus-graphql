@@ -19,6 +19,7 @@ import Subscription.API
 import Subscription.Utils
   ( Signal,
     SimulationState (..),
+    addInputs,
     apolloConnectionAck,
     apolloInit,
     apolloRes,
@@ -53,10 +54,9 @@ clientInputs =
     apolloStop 1
   ]
 
-triggerSubscription ::
-  IO TestTree
+triggerSubscription :: IO TestTree
 triggerSubscription = do
-  (input, state) <- simulateSubApp app (initState clientInputs)
+  (input, state) <- simulateSubApp app (addInputs clientInputs initState)
   SimulationState {inputs, outputs, store} <-
     simulatePublish (Event [DEITY] Info {name = "Zeus", age = 1200}) state
       >>= simulatePublish (Event [HUMAN] Info {name = "Hercules", age = 18})
