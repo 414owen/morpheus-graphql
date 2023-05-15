@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
@@ -32,7 +33,7 @@ module Subscription.Utils
 where
 
 import Data.Aeson (encode)
-import Data.Aeson.Decoding (decode)
+import Data.Aeson.Decoding (decode, eitherDecode)
 import Data.Aeson.Types
   ( FromJSON (..),
     Options (..),
@@ -141,7 +142,7 @@ testSimulation test simInputs api = do
   s <- simulate api input (SimulationState simInputs [] empty)
   pure $ test input s
 
-expectedResponse :: [ByteString] -> [ByteString] -> IO ()
+expectedResponse :: (Show a, Eq a) => [a] -> [a] -> IO ()
 expectedResponse expected value
   | expected == value = pure ()
   | otherwise =
@@ -151,11 +152,10 @@ expectResponseError :: ByteString -> [ByteString] -> TestTree
 expectResponseError err = testCase "expected response" . expectedResponse [err]
 
 testResponse :: [Signal] -> [ByteString] -> TestTree
-testResponse expected =
-  testCase
-    "expected response"
-    . expectedResponse
-      (map encode expected)
+testResponse expected inputs = testCase "expected response" $
+  do
+    res <- either fail pure (traverse eitherDecode inputs)
+    expectedResponse expected res
 
 inputsAreConsumed :: [Signal] -> TestTree
 inputsAreConsumed =
@@ -231,21 +231,36 @@ storeSubscriptions
               <> show
                 cStore
 
-apolloStart :: ByteString -> String -> Signal
+data RequestPayload = RequestPayload
+  { variables :: Maybe Value,
+    operationName :: String,
+    query :: String
+  }
+  deriving (Generic, ToJSON)
+
+apolloStart :: String -> Int -> Signal
 apolloStart query sid =
   Signal
-    { signalId = Just sid,
+    { signalId = Just (show sid),
       signalType = "subscribe",
-      signalPayload = decode ("{\"variables\":{},\"operationName\":\"MySubscription\",\"query\":\"" <> query <> "\"}")
+      signalPayload =
+        Just
+          ( toJSON
+              RequestPayload
+                { variables = Nothing,
+                  operationName = "MySubscription",
+                  query
+                }
+          )
     }
 
-apolloStop :: String -> Signal
-apolloStop x = signal {signalType = "complete", signalId = Just x}
+apolloStop :: Int -> Signal
+apolloStop x = signal {signalType = "complete", signalId = Just (show x)}
 
-apolloRes :: String -> ByteString -> Signal
+apolloRes :: Int -> ByteString -> Signal
 apolloRes sid value =
   Signal
-    { signalId = Just sid,
+    { signalId = Just (show sid),
       signalType = "next",
       signalPayload = decode ("{\"data\":" <> value <> "}")
     }

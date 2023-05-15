@@ -43,10 +43,10 @@ import Test.Tasty
   )
 import Prelude
 
-startNewDeity :: String -> Signal
+startNewDeity :: Int -> Signal
 startNewDeity = apolloStart "subscription MySubscription { newDeity { name , age }}"
 
-startNewHuman :: String -> Signal
+startNewHuman :: Int -> Signal
 startNewHuman = apolloStart "subscription MySubscription { newHuman { name , age }}"
 
 simulateSubscriptions :: IO (Input SUB, SimulationState EVENT)
@@ -58,11 +58,11 @@ simulateSubscriptions = do
       input
       ( SimulationState
           [ apolloInit,
-            startNewDeity "1",
-            startNewDeity "2",
-            startNewDeity "3",
-            startNewHuman "4",
-            apolloStop "1"
+            startNewDeity 1,
+            startNewDeity 2,
+            startNewDeity 3,
+            startNewHuman 4,
+            apolloStop 1
           ]
           []
           empty
@@ -84,13 +84,13 @@ triggerSubscription = do
           -- triggers subscriptions by channels
           [ apolloConnectionAck,
             apolloRes
-              "2"
+              2
               "{\"newDeity\":{\"name\":\"Zeus\",\"age\":1200}}",
             apolloRes
-              "3"
+              3
               "{\"newDeity\":{\"name\":\"Zeus\",\"age\":1200}}",
             apolloRes
-              "4"
+              4
               "{\"newHuman\":{\"name\":\"Hercules\",\"age\":18}}"
           ]
           outputs,

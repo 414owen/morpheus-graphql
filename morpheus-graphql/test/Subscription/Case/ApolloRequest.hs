@@ -90,7 +90,7 @@ testPingPong = testSimulation test [apolloInit, apolloPing]
             outputs
         ]
 
-startSub :: String -> Signal
+startSub :: Int -> Signal
 startSub = apolloStart "subscription MySubscription { newDeity { name }}"
 
 testSubscriptionStart ::
@@ -101,8 +101,8 @@ testSubscriptionStart =
   testSimulation
     test
     [ apolloInit,
-      startSub "1",
-      startSub "5"
+      startSub 1,
+      startSub 5
     ]
   where
     test input SimulationState {inputs, outputs, store} =
@@ -126,9 +126,9 @@ testSubscriptionStop =
   testSimulation
     test
     [ apolloInit,
-      startSub "1",
-      startSub "5",
-      apolloStop "1"
+      startSub 1,
+      startSub 5,
+      apolloStop 1
     ]
   where
     test input SimulationState {inputs, outputs, store} =
