@@ -33,7 +33,7 @@ module Subscription.Utils
   )
 where
 
-import Data.Aeson (encode, fromJSON, genericLiftToJSON)
+import Data.Aeson (encode)
 import Data.Aeson.Decoding (decode, eitherDecode)
 import Data.Aeson.Types
   ( FromJSON (..),
