@@ -11,13 +11,8 @@ where
 import Data.Morpheus.Subscriptions
   ( Event (..),
   )
-import Data.Morpheus.Subscriptions.Internal
-  ( Input,
-    SUB,
-  )
 import Subscription.API
   ( Channel (..),
-    EVENT,
     Info (..),
     app,
   )
@@ -48,22 +43,20 @@ newDeity = subscribe "subscription MySubscription { newDeity { name , age }}"
 newHuman :: Int -> Signal
 newHuman = subscribe "subscription MySubscription { newHuman { name , age }}"
 
-simulateSubscriptions :: IO (Input SUB, SimulationState EVENT)
-simulateSubscriptions =
-  simulateSubApp app $
-    initState
-      [ apolloInit,
-        newDeity 1,
-        newDeity 2,
-        newDeity 3,
-        newHuman 4,
-        apolloStop 1
-      ]
+clientInputs :: [Signal]
+clientInputs =
+  [ apolloInit,
+    newDeity 1,
+    newDeity 2,
+    newDeity 3,
+    newHuman 4,
+    apolloStop 1
+  ]
 
 triggerSubscription ::
   IO TestTree
 triggerSubscription = do
-  (input, state) <- simulateSubscriptions
+  (input, state) <- simulateSubApp app (initState clientInputs)
   SimulationState {inputs, outputs, store} <-
     simulatePublish (Event [DEITY] Info {name = "Zeus", age = 1200}) state
       >>= simulatePublish (Event [HUMAN] Info {name = "Hercules", age = 18})
