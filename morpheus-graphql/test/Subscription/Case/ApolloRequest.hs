@@ -22,7 +22,6 @@ import Subscription.Utils
     apolloInit,
     apolloPing,
     apolloPong,
-    apolloStart,
     apolloStop,
     expectResponseError,
     inputsAreConsumed,
@@ -31,6 +30,7 @@ import Subscription.Utils
     storeSubscriptions,
     stored,
     storedSingle,
+    subscribe,
     testResponse,
     testSimulation,
   )
@@ -91,7 +91,7 @@ testPingPong = testSimulation test [apolloInit, apolloPing]
         ]
 
 startSub :: Int -> Signal
-startSub = apolloStart "subscription MySubscription { newDeity { name }}"
+startSub = subscribe "subscription MySubscription { newDeity { name }}"
 
 testSubscriptionStart ::
   (Eq ch, Show ch, Hashable ch) =>

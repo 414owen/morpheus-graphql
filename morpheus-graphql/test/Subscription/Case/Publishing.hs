@@ -29,12 +29,12 @@ import Subscription.Utils
     apolloConnectionAck,
     apolloInit,
     apolloRes,
-    apolloStart,
     apolloStop,
     inputsAreConsumed,
     simulate,
     simulatePublish,
     storeSubscriptions,
+    subscribe,
     testResponse,
   )
 import Test.Tasty
@@ -44,10 +44,10 @@ import Test.Tasty
 import Prelude
 
 startNewDeity :: Int -> Signal
-startNewDeity = apolloStart "subscription MySubscription { newDeity { name , age }}"
+startNewDeity = subscribe "subscription MySubscription { newDeity { name , age }}"
 
 startNewHuman :: Int -> Signal
-startNewHuman = apolloStart "subscription MySubscription { newHuman { name , age }}"
+startNewHuman = subscribe "subscription MySubscription { newHuman { name , age }}"
 
 simulateSubscriptions :: IO (Input SUB, SimulationState EVENT)
 simulateSubscriptions = do

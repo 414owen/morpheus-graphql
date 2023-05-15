@@ -2,6 +2,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -17,7 +18,7 @@ module Subscription.Utils
     stored,
     storeSubscriptions,
     simulatePublish,
-    apolloStart,
+    subscribe,
     apolloStop,
     apolloRes,
     apolloInit,
@@ -238,8 +239,8 @@ data RequestPayload = RequestPayload
   }
   deriving (Generic, ToJSON)
 
-apolloStart :: String -> Int -> Signal
-apolloStart query sid =
+subscribe :: String -> Int -> Signal
+subscribe query sid =
   Signal
     { signalId = Just (show sid),
       signalType = "subscribe",
