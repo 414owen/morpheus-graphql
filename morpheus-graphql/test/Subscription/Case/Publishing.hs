@@ -43,31 +43,31 @@ import Test.Tasty
   )
 import Prelude
 
-startNewDeity :: Int -> Signal
-startNewDeity = subscribe "subscription MySubscription { newDeity { name , age }}"
+newDeity :: Int -> Signal
+newDeity = subscribe "subscription MySubscription { newDeity { name , age }}"
 
-startNewHuman :: Int -> Signal
-startNewHuman = subscribe "subscription MySubscription { newHuman { name , age }}"
+newHuman :: Int -> Signal
+newHuman = subscribe "subscription MySubscription { newHuman { name , age }}"
 
 simulateSubscriptions :: IO (Input SUB, SimulationState EVENT)
 simulateSubscriptions = do
   input <- connect
-  state <-
-    simulate
-      app
-      input
-      ( SimulationState
-          [ apolloInit,
-            startNewDeity 1,
-            startNewDeity 2,
-            startNewDeity 3,
-            startNewHuman 4,
-            apolloStop 1
-          ]
-          []
-          empty
-      )
+  state <- simulate app input initial
   pure (input, state)
+  where
+    initial =
+      SimulationState
+        { inputs =
+            [ apolloInit,
+              newDeity 1,
+              newDeity 2,
+              newDeity 3,
+              newHuman 4,
+              apolloStop 1
+            ],
+          outputs = [],
+          store = empty
+        }
 
 triggerSubscription ::
   IO TestTree
