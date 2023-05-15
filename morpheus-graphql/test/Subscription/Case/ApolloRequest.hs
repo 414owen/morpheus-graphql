@@ -20,7 +20,6 @@ import Subscription.Utils
   ( SimulationState (..),
     SubM,
     apolloConnectionAck,
-    apolloConnectionErr,
     apolloInit,
     apolloPing,
     apolloPong,

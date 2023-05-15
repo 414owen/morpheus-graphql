@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -72,7 +73,6 @@ import Test.Tasty.HUnit
     assertFailure,
     testCase,
   )
-import Text.ParserCombinators.ReadP (option)
 
 data SimulationState e = SimulationState
   { inputs :: [ByteString],
